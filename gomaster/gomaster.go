@@ -53,8 +53,8 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) pb.
 	var Key, Value string
 	var err error
 	
-	Key := args[0]
-	Value := args[1]
+	Key = args[0]
+	Value = args[1]
 
 	// Write the key tothe state in ledger
 	err = stub.PutState(Key, []byte(Value))
@@ -75,10 +75,10 @@ func (t *WFChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb
 	var Key string
 	var err error
 	
-	Key := args[0]
+	Key = args[0]
 
 	// Delete the key from the state in ledger
-	err := stub.DelState(Key)
+	err = stub.DelState(Key)
 	if err != nil {
 		return shim.Error("Failed to delete state")
 	}
