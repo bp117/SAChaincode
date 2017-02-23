@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -53,6 +51,8 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) pb.
 		return shim.Error("Incorrect number of arguments. Expecting 2, Key and Value")
 	}
 	var Key, Value string
+	var err error
+	
 	Key := args[0]
 	Value := args[1]
 
@@ -73,6 +73,8 @@ func (t *WFChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
 	var Key string
+	var err error
+	
 	Key := args[0]
 
 	// Delete the key from the state in ledger
