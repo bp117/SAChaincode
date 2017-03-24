@@ -17,13 +17,13 @@ func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, ar
 	if len(args) != 1 {
 			return nil, errors.New("Incorrect number of arguments. Expecting 1")
 		}
-	
+
 	// Initialize the chaincode
-	err = stub.PutState("init_wf", []byte(args[0]))
+	err = stub.PutState("DOCUMENT-LIST", []byte(args[0]))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return nil, nil
 }
 
@@ -36,7 +36,7 @@ func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, 
 	} else if function == "write" {
 		// calls the write method
 		return t.write(stub, args)
-	} 
+	}
 
 	fmt.Println("invoke did not find func: " + function)
 	return nil, errors.New("Received unknown function invocation: " + function + "expecting init, write, query")
@@ -45,13 +45,13 @@ func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, 
 
 // Writes an entity to state
 func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args ) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2, Key and Value")
+	if len(args ) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2, Key, Value, LogInfo")
 	}
 	var key, value string
 	var err error
 	var logData []byte
-	
+
 	key = args[0]
 	value = args[1]
 	logData, _ =  b64.StdEncoding.DecodeString(args[2])
@@ -68,17 +68,51 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]
 	return nil, nil
 }
 
+// Writes an entity to state
+func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args ) != 4 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2, DocKey,DocValue, DocInfo, LogInfo")
+	}
+	var key, value, docInfo string
+	var err error
+	var logData []byte
+
+	key = args[0]
+	value = args[1]
+	docInfo = args[2]
+	logData, _ =  b64.StdEncoding.DecodeString(args[3])
+
+	fmt.Printf("Running WRITEDocument function :%s\n", string(logData))
+	// Write the key to the state in ledger
+	err = stub.PutState(key, []byte(value))
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to writeDocument-put state\",\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
+		return nil, errors.New(jsonResp)
+	}
+	fmt.Printf("DOCUMENT-LIST")
+	// Write the key to the state in ledger
+	err = stub.PutState("DOCUMENT-LIST", []byte(docInfo))
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to update DOCUMENT-LIST\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	jsonResp := "{\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
+	fmt.Printf("Write Response:%s\n", jsonResp)
+	return nil, nil
+}
+
 // query callback representing the query of a chaincode
 func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("query is running " + function)
-	
+
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the Key to query")
 	}
 
 	// Get the state from the ledger
-	if function == "read" { 
-		
+	if function == "read" {
+
 		Avalbytes, err := t.read(stub, args)
 		if err != nil {
 			return nil, err
