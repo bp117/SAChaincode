@@ -12,14 +12,14 @@ type WFChaincode struct {
 }
 
 func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("ex02 Init")
+	fmt.Println("ex02 Init\n")
 	var err error
 	if len(args) != 1 {
 			return nil, errors.New("Incorrect number of arguments. Expecting 1")
 		}
 
 	// Initialize the chaincode
-	err = stub.PutState("DOCUMENT-LIST", []byte(args[0]))
+	err = stub.PutState("Initial msg", []byte(args[0]))
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, ar
 }
 
 func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
+	fmt.Printf("invoke is running %s\n", function)
 
 	if function == "init" {
 		// calls our init method
@@ -41,7 +41,7 @@ func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, 
 		return t.writeDocument(stub, args)
 	}
 
-	fmt.Println("invoke did not find func: " + function)
+	fmt.Printf("invoke did not find func: %s\n", function)
 	return nil, errors.New("Received unknown function invocation: " + function + " expecting init, write, writeDocument, query")
 }
 
@@ -92,7 +92,7 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 		jsonResp := "{\"Error\":\"Failed to writeDocument-put state\",\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
 		return nil, errors.New(jsonResp)
 	}
-	fmt.Printf("DOCUMENT-LIST")
+	fmt.Printf("DOCUMENT-LIST\n")
 	// Write the key to the state in ledger
 	err = stub.PutState("DOCUMENT-LIST", []byte(docInfo))
 	if err != nil {
@@ -107,7 +107,7 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 
 // query callback representing the query of a chaincode
 func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("query is running " + function)
+	fmt.Printf("query is running %s\n", function)
 
 	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the Key to query")
@@ -130,7 +130,7 @@ func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, a
 		fmt.Printf("Query Response: %s\n", jsonResp)
 		return Avalbytes, nil
 	}
-	fmt.Println("query did not find func: " + function)
+	fmt.Printf("query did not find func: %s\n", function)
 
     return nil, errors.New("Received unknown function query: " + function)
 }
@@ -161,6 +161,6 @@ func (t *WFChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]b
 func main() {
 	err := shim.Start(new(WFChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Wellsfargo chaincode: %s", err)
+		fmt.Printf("Error starting Wellsfargo chaincode: %s\n", err)
 	}
 }
