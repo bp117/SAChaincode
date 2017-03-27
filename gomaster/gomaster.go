@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	b64 "encoding/base64"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -19,7 +20,7 @@ func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, ar
 		}
 
 	// Initialize the chaincode
-	err = stub.PutState("Initial msg", []byte(args[0]))
+	err = stub.PutState("DOCUMENT_INDEX", []byte(args[0]))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,8 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 	}
 	var key, value, docInfo string
 	var err error
-	var logData []byte
+	var logData, docIndxData []byte
+	var docIndx int
 
 	key = args[0]
 	value = args[1]
@@ -92,15 +94,28 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 		jsonResp := "{\"Error\":\"Failed to writeDocument-put state\",\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
 		return nil, errors.New(jsonResp)
 	}
-	fmt.Printf("DOCUMENT-LIST\n")
-	// Write the key to the state in ledger
-	err = stub.PutState("DOCUMENT-LIST", []byte(docInfo))
+	fmt.Printf("Update DOCUMENT_INDEX\n")
+	// read the DOCUMENT_INDEX from the ledger
+	docIndxData, err = stub.GetState("DOCUMENT_INDEX")
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to update DOCUMENT-LIST\"}"
+		jsonResp := "{\"Error\":\"Failed to read DOCUMENT_INDEX\"}"
+		return nil, errors.New(jsonResp)
+	}
+	docIndx, err = strconv.Atoi(string(docIndxData))
+	docIndx++
+	err = stub.PutState("DOCUMENT_INDEX", []byte(strconv.Itoa(docIndx)))
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to Update DOCUMENT_INDEX\"}"
+		return nil, errors.New(jsonResp)
+	}
+	// write doc info
+	err = stub.PutState("DOCUMENT-" + docIndx, []byte(docInfo))
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to update DOCUMENT-" + docIndx + " Info \"}"
 		return nil, errors.New(jsonResp)
 	}
 
-	jsonResp := "{\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
+	jsonResp := "{\"Key\":\"" + key + "\", \"DocIndx\":\"DOCUMENT-" + docIndx + ",\"Value\":\"" + docInfo +"\"}"
 	fmt.Printf("Write Response:%s\n", jsonResp)
 	return nil, nil
 }
@@ -117,6 +132,21 @@ func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, a
 	if function == "read" {
 
 		Avalbytes, err := t.read(stub, args)
+		if err != nil {
+			return nil, err
+		}
+
+		if Avalbytes == nil {
+			jsonResp := "{\"Error\":\"Nil value for " + args[0] + "\"}"
+			return nil, errors.New(jsonResp)
+		}
+
+		jsonResp := "{\"Key\":\"" + args[0] + "\",\"Value\":\"BLOCK DATA\"}"
+		fmt.Printf("Query Response: %s\n", jsonResp)
+		return Avalbytes, nil
+	} else if function == "readDocuments" {
+
+		Avalbytes, err := t.readDocuments(stub, args)
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +178,35 @@ func (t *WFChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]b
 	key = args[0]
 	logData, _ = b64.StdEncoding.DecodeString(args[1])
 	fmt.Printf("Running READ function :%s\n", string(logData))
+	// reading the state
+	valAsbytes, err := stub.GetState(key)
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	return valAsbytes, nil
+}
+
+func (t *WFChaincode) readDocuments(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var key, jsonResp string
+	var err error
+	var logData, docIndxData []byte
+	var indx, pageNum, pageSize, docIndx int
+
+	if len(args) < 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting name of the key and log data for the query")
+	}
+
+	key = args[0]
+	logData, _ = b64.StdEncoding.DecodeString(args[1])
+	fmt.Printf("Running readDocuments function :%s\n", string(logData))
+	docIndxData, err = stub.GetState("DOCUMENT_INDEX")
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to read DOCUMENT_INDEX\"}"
+		return nil, errors.New(jsonResp)
+	}
+	docIndx, err = strconv.Atoi(string(docIndxData))
 	// reading the state
 	valAsbytes, err := stub.GetState(key)
 	if err != nil {
