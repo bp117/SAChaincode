@@ -36,17 +36,20 @@ func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, 
 	} else if function == "write" {
 		// calls the write method
 		return t.write(stub, args)
+	} else if function == "writeDocument" {
+		// calls the write method
+		return t.writeDocument(stub, args)
 	}
 
 	fmt.Println("invoke did not find func: " + function)
-	return nil, errors.New("Received unknown function invocation: " + function + "expecting init, write, query")
+	return nil, errors.New("Received unknown function invocation: " + function + " expecting init, write, writeDocument, query")
 }
 
 
 // Writes an entity to state
 func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args ) != 3 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2, Key, Value, LogInfo")
+	if len(args ) < 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 3: Key, Value, LogInfo")
 	}
 	var key, value string
 	var err error
@@ -70,8 +73,8 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]
 
 // Writes an entity to state
 func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args ) != 4 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2, DocKey,DocValue, DocInfo, LogInfo")
+	if len(args ) < 4 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 4: DocKey, DocValue, DocInfo, LogInfo")
 	}
 	var key, value, docInfo string
 	var err error
@@ -82,7 +85,7 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 	docInfo = args[2]
 	logData, _ =  b64.StdEncoding.DecodeString(args[3])
 
-	fmt.Printf("Running WRITEDocument function :%s\n", string(logData))
+	fmt.Printf("Running writeDocument function :%s\n", string(logData))
 	// Write the key to the state in ledger
 	err = stub.PutState(key, []byte(value))
 	if err != nil {
@@ -106,7 +109,7 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("query is running " + function)
 
-	if len(args) != 1 {
+	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the Key to query")
 	}
 
@@ -138,7 +141,7 @@ func (t *WFChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]b
 	var err error
 	var logData []byte
 
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the key and log data for the query")
 	}
 
