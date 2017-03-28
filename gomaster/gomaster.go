@@ -3,7 +3,6 @@ package main
 import (
 	b64 "encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/op/go-logging"
 	"os"
@@ -24,7 +23,7 @@ var format = logging.MustStringFormatter(
 )
 
 func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("ex02 Init\n")
+	log.Info("ex02 Init\n")
 	var err error
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -40,7 +39,7 @@ func (t *WFChaincode) Init(stub shim.ChaincodeStubInterface, function string, ar
 }
 
 func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	log.InfoF("invoke is running %s\n", function)
+	log.Infof("invoke is running %s\n", function)
 
 	if function == "init" {
 		// calls our init method
@@ -53,7 +52,7 @@ func (t *WFChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, 
 		return t.writeDocument(stub, args)
 	}
 
-	log.InfoF("invoke did not find func: %s\n", function)
+	log.Infof("invoke did not find func: %s\n", function)
 	return nil, errors.New("Received unknown function invocation: " + function + " expecting init, write, writeDocument, query")
 }
 
@@ -70,7 +69,7 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]
 	value = args[1]
 	logData, _ = b64.StdEncoding.DecodeString(args[2])
 
-	log.InfoF("Running WRITE function :%s\n", string(logData))
+	log.Infof("Running WRITE function :%s\n", string(logData))
 	// Write the key to the state in ledger
 	err = stub.PutState(key, []byte(value))
 	if err != nil {
@@ -78,7 +77,7 @@ func (t *WFChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]
 		return nil, errors.New(jsonResp)
 	}
 	jsonResp := "{\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
-	log.InfoF("Write Response:%s\n", jsonResp)
+	log.Infof("Write Response:%s\n", jsonResp)
 	return nil, nil
 }
 
@@ -97,14 +96,14 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 	docInfo = args[2]
 	logData, _ = b64.StdEncoding.DecodeString(args[3])
 
-	log.InfoF("Running writeDocument function :%s\n", string(logData))
+	log.Infof("Running writeDocument function :%s\n", string(logData))
 	// Write the key to the state in ledger
 	err = stub.PutState(key, []byte(value))
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to writeDocument-put state\",\"Key\":\"" + key + "\",\"Value\":\"BLOCK DATA\"}"
 		return nil, errors.New(jsonResp)
 	}
-	log.InfoF("Update DOCUMENT_INDEX\n")
+	log.Infof("Update DOCUMENT_INDEX\n")
 	// read the DOCUMENT_INDEX from the ledger
 	docIndxData, err = stub.GetState("DOCUMENT_INDEX")
 	if err != nil {
@@ -126,13 +125,13 @@ func (t *WFChaincode) writeDocument(stub shim.ChaincodeStubInterface, args []str
 	}
 
 	jsonResp := "{\"Key\":\"" + key + "\", \"DocIndx\":\"DOCUMENT-" + strconv.Itoa(docIndx) + ",\"Value\":\"" + docInfo + "\"}"
-	log.InfoF("Write Response:%s\n", jsonResp)
+	log.Infof("Write Response:%s\n", jsonResp)
 	return nil, nil
 }
 
 // query callback representing the query of a chaincode
 func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	log.InfoF("query is running %s\n", function)
+	log.Infof("query is running %s\n", function)
 
 	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the Key to query")
@@ -152,7 +151,7 @@ func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, a
 		}
 
 		jsonResp := "{\"Key\":\"" + args[0] + "\",\"Value\":\"BLOCK DATA\"}"
-		log.InfoF("Query Response: %s\n", jsonResp)
+		log.Infof("Query Response: %s\n", jsonResp)
 		return Avalbytes, nil
 	} else if function == "readDocuments" {
 
@@ -167,10 +166,10 @@ func (t *WFChaincode) Query(stub shim.ChaincodeStubInterface, function string, a
 		}
 
 		jsonResp := "{\"Key\":\"" + args[0] + "\",\"Value\":\"BLOCK DATA\"}"
-		log.InfoF("Query Response: %s\n", jsonResp)
+		log.Infof("Query Response: %s\n", jsonResp)
 		return Avalbytes, nil
 	}
-	log.ErrorF("query did not find func: %s\n", function)
+	log.Errorf("query did not find func: %s\n", function)
 
 	return nil, errors.New("Received unknown function query: " + function)
 }
@@ -187,7 +186,7 @@ func (t *WFChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]b
 
 	key = args[0]
 	logData, _ = b64.StdEncoding.DecodeString(args[1])
-	log.InfoF("Running READ function :%s\n", string(logData))
+	log.Infof("Running READ function :%s\n", string(logData))
 	// reading the state
 	valAsbytes, err := stub.GetState(key)
 	if err != nil {
@@ -226,7 +225,7 @@ func (t *WFChaincode) readDocuments(stub shim.ChaincodeStubInterface, args []str
 	}
 
 	logData, _ = b64.StdEncoding.DecodeString(args[1])
-	log.InfoF("Running readDocuments function :%s\n", string(logData))
+	log.Infof("Running readDocuments function :%s\n", string(logData))
 	docIndxData, err = stub.GetState("DOCUMENT_INDEX")
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to read DOCUMENT_INDEX\"}"
