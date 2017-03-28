@@ -198,15 +198,15 @@ func (t *WFChaincode) readDocuments(stub shim.ChaincodeStubInterface, args []str
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the pageNum, pageSize and LogInfo for query")
 	}
 
-	pageNum, err = strconv.Atoi(args[1])
+	pageNum, err = strconv.Atoi(args[0])
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to read pageNum from args 1\"}"
+		jsonResp := "{\"Error\":\"Failed to read pageNum from args 0\"}"
 		return nil, errors.New(jsonResp)
 	}
 	if pageNum > 0 {
-		pageSize, err = strconv.Atoi(args[2])
+		pageSize, err = strconv.Atoi(args[1])
 		if err != nil {
-			jsonResp := "{\"Error\":\"Failed to read pageSize from args 2\"}"
+			jsonResp := "{\"Error\":\"Failed to read pageSize from args 1\"}"
 			return nil, errors.New(jsonResp)
 		}
 		if pageSize <= 0 {
@@ -214,7 +214,7 @@ func (t *WFChaincode) readDocuments(stub shim.ChaincodeStubInterface, args []str
 		}
 	}
 
-	logData, _ = b64.StdEncoding.DecodeString(args[1])
+	logData, _ = b64.StdEncoding.DecodeString(args[2])
 	log.Printf("Running readDocuments function :%s\n", string(logData))
 	docIndxData, err = stub.GetState("DOCUMENT_INDEX")
 	if err != nil {
